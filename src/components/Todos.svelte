@@ -1,10 +1,13 @@
 <script>
     export let todos = [];
 
+    import FilterButton from "./FilterButton.svelte";
+    import Todo from "./Todo.svelte";
+
     $: totalTodos = todos.length;
     $: completedTodos = todos.filter((todo) => todo.completed).length;
 
-    function removeToDo(todo) {
+    function removeTodo(todo) {
         todos = todos.filter((t) => t.id !== todo.id);
     }
 
@@ -12,7 +15,7 @@
 
     function addToDo() {
         //push breaks the function of this because it mutates the array and svelte doesn't know
-        //its changed.
+        //its changed.  So we need to use the spread operator as per below
         todos = [
             ...todos,
             { id: newToDoId, name: newToDoName, completed: false },
@@ -30,8 +33,14 @@
     const filterToDos = (filter, todos) =>
         filter === "active"
             ? todos.filter((t) => !t.completed)
-            : filter === "completed" ? todos.filter((t) => t.completed)
+            : filter === "completed"
+            ? todos.filter((t) => t.completed)
             : todos;
+
+    function updateTodo(todo) {
+        const i = todos.findIndex((t) => t.id === todo.id);
+        todos[i] = { ...todos[i], ...todo };
+    }
 </script>
 
 <!-- Todos.svelte -->
@@ -56,38 +65,7 @@
     </form>
 
     <!-- Filter -->
-    <div class="filters btn-group stack-exception">
-        <button
-            class="btn toggle-btn"
-            class:btn__primary={filter === "all"}
-            aria-pressed={filter === "all"}
-            on:click={() => (filter = "all")}
-        >
-            <span class="visually-hidden">Show</span>
-            <span>All</span>
-            <span class="visually-hidden">tasks</span>
-        </button>
-        <button
-            class="btn toggle-btn"
-            class:btn__primary={filter === "active"}
-            aria-pressed={filter === "active"}
-            on:click={() => (filter = "active")}
-        >
-            <span class="visually-hidden">Show</span>
-            <span>Active</span>
-            <span class="visually-hidden">tasks</span>
-        </button>
-        <button
-            class="btn toggle-btn"
-            class:btn__primary={filter === "completed"}
-            aria-pressed={filter === "completed"}
-            on:click={() => (filter = "completed")}
-        >
-            <span class="visually-hidden">Show</span>
-            <span>Completed</span>
-            <span class="visually-hidden">tasks</span>
-        </button>
-    </div>
+    <FilterButton bind:filter />
 
     <!-- TodosStatus -->
     <h2 id="list-heading">
@@ -103,34 +81,10 @@
     >
         {#each filterToDos(filter, todos) as todo (todo.id)}
             <li class="todo">
-                <div class="stack-small">
-                    <div class="c-cb">
-                        <input
-                            type="checkbox"
-                            id="todo-{todo.id}"
-                            checked={todo.completed}
-                            on:click={() => (todo.completed = !todo.completed)}
-                        />
-                        <label for="todo-{todo.id}" class="todo-label">
-                            {todo.name}
-                        </label>
-                    </div>
-                    <div class="btn-group">
-                        <button type="button" class="btn">
-                            Edit <span class="visually-hidden">{todo.name}</span
-                            >
-                        </button>
-                        <button
-                            type="button"
-                            class="btn btn__danger"
-                            on:click={() => removeToDo(todo)}
-                        >
-                            Delete <span class="visually-hidden"
-                                >{todo.name}</span
-                            >
-                        </button>
-                    </div>
-                </div>
+                <Todo {todo}
+                on:remove={(e) => removeTodo(e.detail)}
+                on:update={(e) => updateTodo(e.detail)}
+                />
             </li>
         {:else}
             <li>Nothing to do here!</li>
